@@ -112,8 +112,7 @@ class WorkerThread(QtCore.QObject):
                     if self.is_fetch and self.msg == b'Ready':
                         print("Fetching")
 
-                        response = requests.get(
-                            'http://tele3dprinting.com/2019/process.php?api=list')
+                        response = requests.get(self.downloadUrl)
                         response = response.json()
 
                         print(f"----> {response=}")
