@@ -1,0 +1,5 @@
+{
+    "SCHOOL_ID" : "13",
+    "DOWNLOAD_URL": "http://tele3dprinting.com/2019/process.php?api=list",
+    "ID_MODEL_URL": "http://tele3dprinting.com/2019/process.php?api=stl.read&file_id="
+}
