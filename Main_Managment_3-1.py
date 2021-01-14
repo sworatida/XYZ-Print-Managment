@@ -329,8 +329,10 @@ class Ui(QMainWindow):
             #     os.system('shutdown /r /t 0')
 
         # self.worker.s.sendall(b'st:0:st')
-        time.sleep(5)
+        
         self.checkImageExisting_2('ImageRecognition/5-Print.PNG', click=True)
+        time.sleep(3)
+        self.worker.s.sendall(b'st:1:st')
 
         is_handle_error = False
         is_found_image = self.checkImageExisting(
@@ -338,14 +340,20 @@ class Ui(QMainWindow):
         if is_found_image:
             self.checkImageExisting_2(
                 'ImageRecognition/5-Print.PNG', click=True)
+            time.sleep(3)
+            self.worker.s.sendall(b'st:1:st')
             is_found_image = self.checkImageExisting(
                 'ImageErrorCase/PrinterBusy-Cut.png')
             if is_found_image:
                 is_found_image = self.checkImageExisting_2(
                     'ImageRecognition/5-1-Print.PNG', click=True)
+                time.sleep(3)
+                self.worker.s.sendall(b'st:1:st')
                 if not is_found_image:
                     self.checkImageExisting_2(
                         'ImageRecognition/5-Print.PNG', click=True)
+                    time.sleep(3)
+                    self.worker.s.sendall(b'st:1:st')
             is_handle_error = True
 
         if not is_handle_error:
