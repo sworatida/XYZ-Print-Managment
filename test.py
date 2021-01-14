@@ -1,6 +1,5 @@
 import os
 
-resp = os.startfile("C:\\Program Files\\XYZprint\\XYZprint.exe")
-# resp = os.startfile("XYZprint.exe.lnk")
+# resp = os.startfile("C:\\Program Files\\XYZprint\\XYZprint.exe")
 
 print(resp)

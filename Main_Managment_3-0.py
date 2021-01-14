@@ -17,7 +17,7 @@ from PyQt5 import QtCore
 
 
 class WorkerThread(QtCore.QObject):
-    def __init__(self, updateUI, school_id, start_function, download_handler, closeProgramXYZ, resetUiState, nPrint, downloadUrl):
+    def __init__(self, updateUI, school_id, start_function, download_handler, closeProgramXYZ, resetUiState, nPrinted, downloadUrl):
         super().__init__()
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # self.s.connect((socket.gethostname(), 1242))
@@ -30,7 +30,8 @@ class WorkerThread(QtCore.QObject):
 
         self.downloadUrl = downloadUrl
 
-        self.printed_count = 0
+        self.nPrinted = nPrinted
+        self.n_loop = 0
         self.now_command = ''
         self.last_command = ''
 
@@ -42,6 +43,7 @@ class WorkerThread(QtCore.QObject):
         self.startFunction = start_function
         self.download3DModel = download_handler
         self.closeProgramXYZ = closeProgramXYZ
+        self.is_closed_program = False
         self.resetUiState = resetUiState
         self.last_time = time.time()
 
@@ -56,78 +58,80 @@ class WorkerThread(QtCore.QObject):
 
             self.msg = self.s.recv(1024)
             # .decode("utf-8") # รับค่า
-            print(f"---{self.msg}---")
+            # print(f"---{self.msg}---")
             if self.msg == b'Busy':
                 self.updateUI('Printer Busy')
             elif self.msg == b'Ready':
                 self.updateUI('Printer Ready')
             elif self.msg == b'Pre-heat Extruder':
-                self.printed_count = 0  # Reset count show round to ui
+                # self.n_loop = 0  # Reset count show round to ui
                 self.updateUI('Pre-heat Extrude')
-                self.closeProgramXYZ()
+                if not self.is_closed_program:
+                    self.closeProgramXYZ()
+                    self.is_closed_program = True
                 self.setFetchStatus(status=True)
             elif self.msg == b'Printing':
                 self.updateUI('Printing')
-                self.printed_count += 1
+                self.n_loop += 1
             elif self.msg == b'Store Extruder':
                 self.updateUI('Store Extruder')
             elif self.msg == b'Object On Heat Bed':  # Waiting user to press OK on Printer
                 self.updateUI('Object On Heat Bed')
+                self.is_closed_program = False
                 self.is_obj_on_heat_bed = True
             elif self.msg == b'\x00':
                 pass
 
             time_pass = time.time() - self.last_time
 
-            if self.printed_count == 0:
+            if self.n_loop == 0:
+                print(f"IF {self.n_loop=}")
                 if self.is_fetch and self.msg == b'Ready' and time_pass > 3:
 
-                    print("Fetching")
+                    print("\t+ Fetching in IF")
 
-                    response = requests.get(self.downloadUrl)
-                    response = response.json()
-
+                    response = requests.get(self.downloadUrl).json()
                     self.last_time = time.time()
 
                     for obj in response:
-                        if obj['school_id'] == self.school_id.text():
+                        if obj['school_id'] == self.school_id:
+                            print(f"\t+ Found match {self.school_id=}")
                             self.is_fetch = False
 
                             # Don't forget to reset self.is_fetch state !!! When print finish !!
                             save_path = self.download3DModel(
                                 file_id=obj['file_id'], file_name=obj['file'])
-                            # self.printed_count += 1
+                            self.n_loop += 1
                             # Status Printing is here
                             self.startFunction(
                                 is_worker_handle=True, save_path=save_path)
 
             else:  # != 0
-                print("----> Else")
+                print(f"ELSE {self.n_loop=}")
                 # if self.last_command == b'Object On Heat Bed':
                 if self.is_obj_on_heat_bed:
-                    print(
-                        f"----> Obj on heat bed, {self.is_fetch=}, {self.msg=}")
-                    self.resetUiState()
+                    print(f"\t+ Obj on heat bed, {self.is_fetch=}, {self.msg=}")
+                    
                     self.is_fetch = True
                     if self.is_fetch and self.msg == b'Ready':
-                        print("Fetching")
+                        print(f"\t+ Fetching in ELSE")
+                        self.resetUiState()
+                        count = int(self.nPrinted.text())+1
+                        self.nPrinted.setText(str(count))
 
-                        response = requests.get(self.downloadUrl)
-                        response = response.json()
-
-                        print(f"----> {response=}")
-
+                        response = requests.get(self.downloadUrl).json()
                         self.last_time = time.time()
 
                         for obj in response:
-                            if obj['school_id'] == self.school_id.text():
+                            if obj['school_id'] == self.school_id:
+                                print(f"\t+ Found match {self.school_id=}")
                                 self.is_fetch = False
                                 self.is_obj_on_heat_bed = False
 
                                 # Don't forget to reset self.is_fetch state !!! When print finish !!
                                 save_path = self.download3DModel(
                                     file_id=obj['file_id'], file_name=obj['file'])
-                                # self.printed_count += 1
+                                # self.n_loop += 1
                                 self.startFunction(
                                     is_worker_handle=True, save_path=save_path, is_first_time=False)
 
@@ -156,7 +160,7 @@ class Ui(QMainWindow):
         self.downloadModelUrl.setText(self.DEFAULT_CONFIG['ID_MODEL_URL'])
 
         self.printerStatus = self.findChild(QLabel, 'fill_status')
-        self.nPrinted = self.findChild(QLabel, 'nPrinted')
+        self.nPrinted = self.findChild(QLabel, 'fill_nPrint')
         self.download3DModelStatus = self.findChild(
             QLabel, 'fill_download_model_status')
         self.xyzStatus = self.findChild(QLabel, 'fill_xyz_status')
@@ -166,7 +170,7 @@ class Ui(QMainWindow):
         self.show()
 
         ''' ---------------------- Thread ----------------------- '''
-        self.worker = WorkerThread(self.updateUI, self.sc_id, self.start,
+        self.worker = WorkerThread(self.updateUI, self.DEFAULT_CONFIG['SCHOOL_ID'], self.start,
                                    self.download3DModel, self.closeProgramXYZ, self.resetUiState, self.nPrinted, self.downloadUrl.text())
         self.workerThread = QtCore.QThread()
         # Init worker run() at startup (optional)
@@ -184,6 +188,9 @@ class Ui(QMainWindow):
 
     def updateUI(self, text):
         text = str(text)
+        print(f"\t+ Status = {text}")
+        if text == self.printerStatus.text():
+            return
         print(f"{text=}")
         self.printerStatus.setText(text)
 
@@ -191,14 +198,14 @@ class Ui(QMainWindow):
         # if "XYZPrint.exe" in (p.name() for p in psutil.process_iter()):
         os.system("TASKKILL /F /IM XYZPrint.exe")
         self.xyzStatus.setText("XYZ Print is Closed.")
-        self.resetUiState()
+        # self.resetUiState()
 
     def openProgramXYZ(self):
         print("Open Program XYZ.")
         self.xyzStatus.setText("XYZ Print is Opening")
         # subprocess.call(["C:\\Program Files\\XYZprint\\XYZprint.exe"])
-        # os.startfile("C:\\Program Files\\XYZprint\\XYZprint.exe")
-        os.startfile("XYZprint.exe.lnk")
+        os.startfile("C:\\Program Files\\XYZprint\\XYZprint.exe")
+        # os.startfile("XYZprint.exe.lnk")
 
     def download3DModel(self, file_id, file_name):  # .3w
         print("Downloading 3D Model")
@@ -230,6 +237,7 @@ class Ui(QMainWindow):
 
     def checkImageExisting(self, state_click_image_url, timeout=5):
         print(f"[checkImageExisting_2] - {state_click_image_url}", end='.. ')
+        time.sleep(1)
         found_location = None
         is_found_image = False
         last = time.time()
@@ -245,6 +253,7 @@ class Ui(QMainWindow):
 
     def checkImageExisting_2(self, state_click_image_url, timeout=5, click=False):
         print(f"[checkImageExisting_2] - {state_click_image_url}", end='.. ')
+        time.sleep(1)
         found_location = None
         is_found_image = False
         last = time.time()
@@ -296,7 +305,7 @@ class Ui(QMainWindow):
                 'ImageRecognition/4-2-OK-open-file.PNG', click=True)  # เปลี่ยนรูปด้วย
             # is_found_image
         # pyautogui.press('enter')
-        self.fileState.setText('Import to XYZ.')
+        # self.fileState.setText('Import to XYZ.')
 
         is_found_image = self.checkImageExisting(
             'ImageErrorCase/ObjectSmall-Cut.png')  # เปลี่ยนรูปด้วย
@@ -319,7 +328,7 @@ class Ui(QMainWindow):
             # if not is_found_image:
             #     os.system('shutdown /r /t 0')
 
-        self.worker.s.sendall(b'st:0:st')
+        # self.worker.s.sendall(b'st:0:st')
         time.sleep(5)
         self.checkImageExisting_2('ImageRecognition/5-Print.PNG', click=True)
 
@@ -353,6 +362,7 @@ class Ui(QMainWindow):
             #     os.system('shutdown /r /t 0')
             is_handle_error = True
 
+
     def start(self, is_worker_handle=False, save_path='', is_first_time=True):
         # This is executed when the button is pressed
         print("START")
@@ -374,6 +384,7 @@ class Ui(QMainWindow):
 
                 self.openProgramXYZ()
                 self.mouseEmulation(save_path)
+                self.closeProgramXYZ()
 
                 # self.worker.setFetchStatus(status=True) # Reset fetch status
 
