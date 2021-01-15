@@ -207,7 +207,7 @@ class Ui(QMainWindow):
         # subprocess.call(["C:\\Program Files\\XYZprint\\XYZprint.exe"])
         os.startfile("C:\\Program Files\\XYZprint\\XYZprint.exe")
         time.sleep(1)
-        if isXyzOpen():
+        if self.isXyzOpen():
             print("XYZ is Opened")
         else:
             os.startfile("C:\\Program Files\\XYZprint\\XYZprint.exe")
