@@ -11,6 +11,7 @@ import socket
 import sys
 import time
 import json
+import psutil 
 from PyQt5 import QtCore
 
 # import pywinauto.keyboard as keyboard
@@ -205,7 +206,17 @@ class Ui(QMainWindow):
         self.xyzStatus.setText("XYZ Print is Opening")
         # subprocess.call(["C:\\Program Files\\XYZprint\\XYZprint.exe"])
         os.startfile("C:\\Program Files\\XYZprint\\XYZprint.exe")
+        time.sleep(1)
+        if isXyzOpen():
+            print("XYZ is Opened")
+        else:
+            os.startfile("C:\\Program Files\\XYZprint\\XYZprint.exe")
+            print("Reopening XYZ")
         # os.startfile("XYZprint.exe.lnk")
+    
+    def isXyzOpen(self):
+        return "XYZprint.exe" in (p.name() for p in psutil.process_iter())
+
 
     def download3DModel(self, file_id, file_name):  # .3w
         print("Downloading 3D Model")
