@@ -117,14 +117,17 @@ class WorkerThread(QtCore.QObject):
                     if self.is_fetch and self.msg == b'Ready':
                         print(f"\t+ Fetching in ELSE")
                         self.resetUiState()
-                        count = int(self.nPrinted.text())+1
-                        self.nPrinted.setText(str(count))
+                        # count = int(self.nPrinted.text())+1
+                        # self.nPrinted.setText(str(count))
 
                         response = requests.get(self.downloadUrl).json()
                         self.last_time = time.time()
 
                         for obj in response:
                             if obj['school_id'] == self.school_id:
+                                count = int(self.nPrinted.text())+1
+                                self.nPrinted.setText(str(count))
+
                                 print(f"\t+ Found match {self.school_id=}")
                                 self.is_fetch = False
                                 self.is_obj_on_heat_bed = False
