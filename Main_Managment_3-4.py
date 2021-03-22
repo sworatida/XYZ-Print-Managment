@@ -60,27 +60,28 @@ class WorkerThread(QtCore.QObject):
             self.msg = self.s.recv(1024)
             # .decode("utf-8") # รับค่า
             # print(f"---{self.msg}---")
-            if self.msg == b'Busy':
+            # if self.msg == b'Busy':
+            if b'Busy' in self.msg:
                 self.updateUI('Printer Busy')
-            elif self.msg == b'Ready':
+            elif b'Ready' in self.msg:
                 self.updateUI('Printer Ready')
-            elif self.msg == b'Pre-heat Extruder':
+            elif b'Pre-heat Extruder' in self.msg:
                 # self.n_loop = 0  # Reset count show round to ui
                 self.updateUI('Pre-heat Extrude')
                 if not self.is_closed_program:
                     self.closeProgramXYZ()
                     self.is_closed_program = True
                 self.setFetchStatus(status=True)
-            elif self.msg == b'Printing':
+            elif b'Printing' in self.msg:
                 self.updateUI('Printing')
                 self.n_loop += 1
-            elif self.msg == b'Store Extruder':
+            elif b'Store Extruder' in self.msg:
                 self.updateUI('Store Extruder')
-            elif self.msg == b'Object On Heat Bed':  # Waiting user to press OK on Printer
+            elif b'Object On Heat Bed' in self.msg:  # Waiting user to press OK on Printer
                 self.updateUI('Object On Heat Bed')
                 self.is_closed_program = False
                 self.is_obj_on_heat_bed = True
-            elif self.msg == b'\x00':
+            elif b'\x00' in self.msg:
                 pass
 
             time_pass = time.time() - self.last_time
@@ -98,6 +99,9 @@ class WorkerThread(QtCore.QObject):
                         if obj['school_id'] == self.school_id:
                             print(f"\t+ Found match {self.school_id=}")
                             self.is_fetch = False
+
+                            count = int(self.nPrinted.text())+1
+                            self.nPrinted.setText(str(count))
 
                             # Don't forget to reset self.is_fetch state !!! When print finish !!
                             save_path = self.download3DModel(
@@ -185,7 +189,7 @@ class Ui(QMainWindow):
         self.workerThread.start()
 
     def resetUiState(self):
-        self.printerStatus.setText("-")
+        # self.printerStatus.setText("-")
         # self.nPrinted.setText(0)
         self.download3DModelStatus.setText("-")
         self.xyzStatus.setText("-")
@@ -339,15 +343,14 @@ class Ui(QMainWindow):
                 'ImageRecognition/3-Open-file.PNG', click=True, timeout=3)
             is_found_image = self.checkImageExisting(
                 'ImageErrorCase/CannotRenderFile-Cut.png')  # เปลี่ยนรูปด้วย
-            # if not is_found_image:
-            #     os.system('shutdown /r /t 0')
+            if not is_found_image:
+                os.system('shutdown /r /t 0')
 
-        # self.worker.s.sendall(b'st:0:st')
         
         self.checkImageExisting_2('ImageRecognition/5-Print.PNG', click=True)
         time.sleep(3)
         self.worker.s.sendall(b'st:1:st')
-
+        
         is_handle_error = False
         is_found_image = self.checkImageExisting(
             'ImageErrorCase/SettingInstalledMaterial-Cut.png', timeout=10)  # เปลี่ยนรูปด้วย
@@ -356,6 +359,7 @@ class Ui(QMainWindow):
                 'ImageRecognition/5-Print.PNG', click=True)
             time.sleep(3)
             self.worker.s.sendall(b'st:1:st')
+            
             is_found_image = self.checkImageExisting(
                 'ImageErrorCase/PrinterBusy-Cut.png')
             if is_found_image:
@@ -363,25 +367,27 @@ class Ui(QMainWindow):
                     'ImageRecognition/5-1-Print.PNG', click=True)
                 time.sleep(3)
                 self.worker.s.sendall(b'st:1:st')
+                
                 if not is_found_image:
                     self.checkImageExisting_2(
                         'ImageRecognition/5-Print.PNG', click=True)
                     time.sleep(3)
                     self.worker.s.sendall(b'st:1:st')
+                    
             is_handle_error = True
 
         if not is_handle_error:
             is_found_image = self.checkImageExisting(
                 'ImageErrorCase/NoPrinter-Cut.png')  # เปลี่ยนรูปด้วย
-            # if not is_found_image:
-            #     os.system('shutdown /r /t 0')
+            if not is_found_image:
+                os.system('shutdown /r /t 0')
             is_handle_error = True
 
         if not is_handle_error:
             is_found_image = self.checkImageExisting(
                 'ImageErrorCase/PrinterBusy-Cut.png')  # เปลี่ยนรูปด้วย
-            # if not is_found_image:
-            #     os.system('shutdown /r /t 0')
+            if not is_found_image:
+                os.system('shutdown /r /t 0')
             is_handle_error = True
 
 
@@ -389,6 +395,7 @@ class Ui(QMainWindow):
         # This is executed when the button is pressed
         print("START")
         self.worker.s.sendall(b"st:0:st")
+        
 
         ready_status = self.printerStatus.text()
         print(f"{ready_status=}")
