@@ -1,3 +1,4 @@
+# from posix import times_result
 from PyQt5 import uic
 from PyQt5.QtWidgets import QLineEdit, QMainWindow, QLabel, QApplication
 # from PyQt5.QtOpenGL import QGLWidget
@@ -342,18 +343,19 @@ class Ui(QMainWindow):
             self.checkImageExisting_2(
                 'ImageRecognition/3-Open-file.PNG', click=True, timeout=3)
             is_found_image = self.checkImageExisting(
-                'ImageErrorCase/CannotRenderFile-Cut.png')  # เปลี่ยนรูปด้วย
-            if not is_found_image:
+                'ImageErrorCase/CannotRenderFile-Cut.png')  # no
+            if is_found_image == True:
                 os.system('shutdown /r /t 0')
 
-        
+        # self.worker.s.sendall(b'st:0:st')
+
         self.checkImageExisting_2('ImageRecognition/5-Print.PNG', click=True)
         time.sleep(3)
         self.worker.s.sendall(b'st:1:st')
         
         is_handle_error = False
         is_found_image = self.checkImageExisting(
-            'ImageErrorCase/SettingInstalledMaterial-Cut.png', timeout=10)  # เปลี่ยนรูปด้วย
+            'ImageErrorCase/SettingInstalledMaterial-Cut.png', timeout=10)  # 
         if is_found_image:
             self.checkImageExisting_2(
                 'ImageRecognition/5-Print.PNG', click=True)
@@ -378,15 +380,15 @@ class Ui(QMainWindow):
 
         if not is_handle_error:
             is_found_image = self.checkImageExisting(
-                'ImageErrorCase/NoPrinter-Cut.png')  # เปลี่ยนรูปด้วย
-            if not is_found_image:
+                'ImageErrorCase/NoPrinter-Cut.png')  #/////////////////////
+            if is_found_image == True:
                 os.system('shutdown /r /t 0')
             is_handle_error = True
 
         if not is_handle_error:
             is_found_image = self.checkImageExisting(
-                'ImageErrorCase/PrinterBusy-Cut.png')  # เปลี่ยนรูปด้วย
-            if not is_found_image:
+                'ImageErrorCase/PrinterBusy-Cut.png')   #/////////////////////
+            if is_found_image == True:
                 os.system('shutdown /r /t 0')
             is_handle_error = True
 
